@@ -230,7 +230,8 @@ The following commands can be used to check if the container was started success
 
 Once the container is running, its IP address can be found using the following command:
 
-    $ docker inspect --format='{{ .NetworkSettings.IPAddress }}' localrepo
+    $ docker inspect \
+        --format='{{ .NetworkSettings.IPAddress }}' localrepo
     172.17.0.2
     
 This IP address should be used as the `REPO_SERVER` build argument when building the Siebel images.
