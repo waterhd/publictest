@@ -2,16 +2,16 @@ Siebel IP17 Install on Docker
 =============================
 *Dennis Waterham <dennis.waterham@oracle.com>, Oracle Advanced Customer Services*
 
-##Introduction
+## Introduction
 
-###Goal
+### Goal
 Goal of this exercise is to create a working Siebel IP2017 Enterprise on Docker, running on a single server.  According to best practices, every function (Application Interface, Gateway, Siebel Server) should be created in a separate image, so it can run in its own container. Images should be as small as possible, so the bare minimum of packages and software is installed and unnecessary files are removed after installation.
 
 The scripts and Docker files are designed to be repeatable, meaning they need to result in the same image every time it's build with the same input. The Siebel software on the resulting images should not be patched or no other software should be installed manually. When there's a need to do so, a new image should be created.
 
 Images should not have environment specific configuration or files, such as `tnsnames.ora`. Specific environment details should be entered at run time using environment variables, so images can be reused for multiple environments.
 
-###Prerequisites
+### Prerequisites
 A Red Hat or Oracle Linux system is required to host the Docker images and containers. An Oracle 12c database is assumed to be already installed and up and running with the Siebel schema installed and `grantusr.sql` executed. The database can be located on the Docker host or any other server in the network. 
 
 A web server will be needed to host the software installation files. If no web server is available, a Docker container can be used for this purpose.
@@ -20,15 +20,15 @@ To download the software images and to install packages from the Oracle Yum repo
 
 To run the Siebel images, keystores and truststores should be created beforehand and located on the Docker host. Instructions can be found on Oracle Support. Keystores and truststores will be attached to the Siebel containers at startup.
 
-###Limitations
+### Limitations
 With the set up in this document configuration data in containers is not persisted, so when a container stops, all configuration data is lost. Volumes can be added to the containers to store persistent data. In a future version of this document, steps will be added to automatically configure the Siebel Enterprise and store persistent data, so the containers can be stopped and restarted without losing data. While not currently used, `confd` is installed on the images to automatically configure the Siebel servers in a later phase.
 
 The Siebel Server image will be installed without the database configuration utilities. These utilities are only needed for upgrading and installing the Siebel database, and are very large, so they are excluded to keep the image as small as possible.
 
-##Docker Installation
+## Docker Installation
 Skip this section if Docker is already set up and running.
 
-####Update Yum repository file
+#### Update Yum repository file
 
 As root, change directory to /etc/yum.repos.d.
 
@@ -38,7 +38,7 @@ Use the wget utility to download the latest repository configuration file.
 
     $ wget http://yum.oracle.com/public-yum-ol7.repo
 
-####Install Docker
+#### Install Docker
 
 Next you simply use yum install to start the installation.
 
@@ -120,7 +120,7 @@ Docker can normally be used by the root account only, so all Docker commands sho
 
 The Docker environment is now ready to be used.
 
-####Test Docker
+#### Test Docker
 Using the `hello-world` image, Docker can be tested to check if it's fully functional:
 
     $ docker run --rm hello-world
@@ -152,19 +152,19 @@ Using the `hello-world` image, Docker can be tested to check if it's fully funct
     For more examples and ideas, visit:
      https://docs.docker.com/engine/userguide/
 
-##Web Server Installation
+## Web Server Installation
 For installing Oracle and Siebel software in the Docker images, it is best to use a web server to download the files from, rather than copying the install files to the image. By using the same `RUN` step to download the install files, do the install and remove the files, the images are kept as small as possible. 
 
 If a web server to host the files is not available, a Docker container can be used, which will only be needed to build the images. The Docker container can be stopped afterwards. 
 
-####Pull Apache Image
+#### Pull Apache Image
 To use a web server container, pull the standard Apache 2.4 image as follows:
 
     $ docker pull httpd:2.4
     
 The image comes with an Apache configuration file, for this purpose, we will slightly modify it so MD5 checksums are generated, which are used to check if files are transferred correctly.
 
-####Web Server Configuration
+#### Web Server Configuration
 Create a directory on the host (e.g. `/u01/localrepo`), which will contain all web server files:
 
     $ mkdir -p /u01/localrepo
@@ -207,7 +207,7 @@ Create another directory on the host where all install files will be located. Th
 
     $ mkdir /u01/localrepo/files
     
-####Start Web Server
+#### Start Web Server
  
 Now, start the container by running the following command:
 
@@ -235,7 +235,7 @@ Once the container is running, its IP address can be found using the following c
     
 This IP address should be used as the `REPO_SERVER` build argument when building the Siebel images.
 
-####Test Web Server
+#### Test Web Server
 To test the web server, create a file in the web server root:
 
     $ echo 'Hello, world!' > /u01/localrepo/files/helloworld.txt
@@ -265,10 +265,10 @@ The `curl` utility can be used to request this file from the web server:
     Hello, world!
     * Connection #0 to host 172.17.0.2 left intact
     
-##Software Preparation
+## Software Preparation
 Before creating the Docker images, all required software needs to be downloaded first, unpacked and prepared. All software will be stored locally except for Linux packages, which will be downloaded from the Oracle Yum repository servers during build time.
 
-###Oracle Linux Image
+### Oracle Linux Image
 All Siebel images will be based on the official Oracle Linux Docker image. This image can be pulled from the Oracle Container Registry or from the Docker hub. In this case, the official Oracle Container Registry is used. In a web browser, navigate to https://container-registry.oracle.com and sign in using your Oracle SSO account.
 
 Use the web interface to accept the Oracle Standard Terms and Restrictions for the `oraclelinux` image, which be found in the OS section. After accepting the terms and restrictions, the image should be pulled in the next 8 hours. If not pulled in this time window, the acceptance process needs to be repeated.
@@ -281,7 +281,7 @@ After logging in, pull the Java and Linux images as follows:
 
     $ docker pull container-registry.oracle.com/os/oraclelinux:7.4
 
-###Siebel
+### Siebel
 Download Siebel IP17 base software from Oracle eDelivery and the most recent patch set (currently, PS5) from Oracle Support. After unpacking, use `snic.sh` to create the install images. Select Linux as platform and only select Siebel Enterprise Server. 
 
 After creating the network images, the directory structure will look as follows:
@@ -387,7 +387,7 @@ The Siebel base image is based on the official Oracle Linux image, adding the ne
 
 Save all files in the sections below to the `sbl_base` directory.
 
-####Web Server Download Script
+#### Web Server Download Script
 To download files from the web server, a script is used which takes a URL as input, downloads the file, checks the digest to see if the file was downloaded successfully and if the file is a tarball, extracts it. If not downloaded successfully, the script will end with exit status 1, which will cause the image build to fail.
 
 Create the script with following contents and save as `getfromrepo`:
@@ -428,7 +428,7 @@ Make the script executable:
 
     $ chmod a+x getfromrepo
 
-####Dockerfile
+#### Dockerfile
 
 Create a file called `Dockerfile` with following contents:
 
@@ -777,7 +777,7 @@ The output should like this:
 
     Complete!
     Downloading oracle_client.rpm from http://172.17.0.2/oracle-instantclient12.1-basiclite-12.1.0.2.0-1.i386.rpm...
-    ######################################################################## 100.0%
+    #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####  100.0%
     ==> headers.60 <==
     HTTP/1.1 200 OK
     Date: Tue, 06 Mar 2018 12:17:43 GMT
@@ -827,7 +827,7 @@ The output should like this:
     Complete!
     removed ‘oracle_client.rpm’
     Downloading /usr/local/bin/confd from http://172.17.0.2/confd-0.15.0-linux-amd64...
-    ######################################################################## 100.0%
+    #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####  100.0%
     ==> headers.74 <==
     HTTP/1.1 200 OK
     Date: Tue, 06 Mar 2018 12:17:45 GMT
@@ -985,7 +985,7 @@ While a few values are hardcoded, such as port numbers and initial passwords, mo
 
 The same response file is used for Siebel base and patch, so the above response file is a superset of both.
  
-####Server Start Script
+#### Server Start Script
 Create a script with following contents and save as `server_start.sh`:
 
     #!/bin/bash -aeu
@@ -1004,7 +1004,7 @@ Make the script executable as follows:
 
     $ chmod a+x server_start.sh
 
-####Dockerfile
+#### Dockerfile
 
 Create a file called `Dockerfile` with following contents:
 
@@ -1112,7 +1112,7 @@ The output will look as follows, for the *ai* role:
      ---> Running in 02379d3e4059
     mkdir: created directory ‘tempinst’
     Downloading sbl_17.tar from http://172.17.0.2/sbl_17.tar...
-    ###############################################################           88.2%==> headers.12 <==
+    #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ###           88.2%==> headers.12 <==
     HTTP/1.1 200 OK
     Date: Tue, 06 Mar 2018 12:30:40 GMT
     Server: Apache/2.4.29 (Unix)
@@ -1123,7 +1123,7 @@ The output will look as follows, for the *ai* role:
     Content-MD5: jwwPk8AQ/vfkMWAvt7rdHg==
     Content-Type: application/x-tar
 
-    ######################################################################## 100.0%
+    #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####  100.0%
     sbl_17.tar: OK
     removed ‘headers.12’
     mode of ‘sbl_17.tar’ changed from 0644 (rw-r--r--) to 0755 (rwxr-xr-x)
@@ -1185,7 +1185,7 @@ The output will look as follows, for the *ai* role:
     Using JRE_HOME as /u01/app/siebel/ses/applicationcontainer/bin/./../../jre
     mkdir: created directory ‘tempinst’
     Downloading sbl_17_5.tar from http://172.17.0.2/sbl_17_5.tar...
-    #####################################################                     73.7%==> headers.585 <==
+    #### #### #### #### #### #### #### #### #### #### #### #### #### #                     73.7%==> headers.585 <==
     HTTP/1.1 200 OK
     Date: Tue, 06 Mar 2018 12:33:54 GMT
     Server: Apache/2.4.29 (Unix)
@@ -1196,10 +1196,10 @@ The output will look as follows, for the *ai* role:
     Content-MD5: BBaZ7gHVx2bHLvXiWiZd/Q==
     Content-Type: application/x-tar
 
-    ##############################################################            87.3%sbl_17_5.tar: OK
+    #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ##            87.3%sbl_17_5.tar: OK
     removed ‘headers.585’
     mode of ‘sbl_17_5.tar’ changed from 0644 (rw-r--r--) to 0755 (rwxr-xr-x)
-    ######################################################################## 100.0%
+    #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### #### ####  100.0%
     removed ‘sbl_17_5.tar’
     ==> install.rsp <==
     RESPONSEFILE_VERSION=2.2.1.0.0
@@ -1288,10 +1288,10 @@ The output will look as follows, for the *ai* role:
     Successfully tagged sbl_ai:17.5.0
     Successfully tagged sbl_ai:latest
 
-##Start Siebel Containers
+## Start Siebel Containers
 After building all the images, the containers can be started. A Docker network will be created so all Siebel containers can communicate with each other. Host names that are used below are examples, other host names can be used if needed.
 
-###Create Network
+### Create Network
 Enter the following command to create a network called `local`:
 
     $ docker network create local
@@ -1335,8 +1335,7 @@ Network settings can be retrieved using the `network inspect` command:
         }
     ]
 
-
-###Start Siebel Containers
+### Start Siebel Containers
 
 Use the following commands to start the Siebel containers:
 
@@ -1359,7 +1358,7 @@ Make sure to use the correct host names and locations of keystore and truststore
 
 On the Application Interface container, port 9701 is published so it is available from the Docker host.
 
-###Launch Siebel Management Console
+### Launch Siebel Management Console
 
 The Siebel Management Console can now be started by navigating to the following URL:
 
